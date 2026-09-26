@@ -15,18 +15,18 @@
 | Owner report page: copy link, download PNG, print to PDF, make private | `frontend/src/app/reports/[id]` |
 | Public share page with OpenGraph preview and creator CTA (the growth loop) | `frontend/src/app/r/[slug]` |
 | Free plan: 3 reports/month; pro/pro_plus/founding unlimited | `services/reports.py` |
+| Razorpay subscriptions (Pro/Pro+, monthly/yearly), checkout, webhooks, cancel, auto-downgrade | `services/billing.py`, `api/billing.py`, `frontend/src/app/billing` |
 | Privacy: no commenter names stored, comment text purged after 30 days, encrypted tokens, Meta deletion callbacks | `security.py`, `api/meta.py`, `worker.py` |
 
 ## Next (in order)
 
 1. **Pilot with 2 creators** as Instagram testers. Measure: do they send the report to a brand?
-2. **Razorpay subscriptions** (Pro ₹299, Pro+ ₹999): checkout page, webhook → `users.plan`.
-3. **Rate calculator**: suggested fee from the creator's own impact history + followers.
-4. **Live media kit** at `/c/<username>`: public profile with impact stats across reports.
-5. **Campaign reports**: several posts/stories for one brand in a single report.
-6. **White-label** (logo, colours) for managers; Manager plan.
-7. **Brand side**: invite creators, dashboard comparing creators, per-report billing.
-8. Stories (24h) support: needs `instagram_business_manage_insights` on stories and polling before expiry.
+2. **Rate calculator**: suggested fee from the creator's own impact history + followers.
+3. **Live media kit** at `/c/<username>`: public profile with impact stats across reports.
+4. **Campaign reports**: several posts/stories for one brand in a single report.
+5. **White-label** (logo, colours) for managers; Manager plan.
+6. **Brand side**: invite creators, dashboard comparing creators, per-report billing.
+7. Stories (24h) support: needs `instagram_business_manage_insights` on stories and polling before expiry.
 
 ## Known limitations
 

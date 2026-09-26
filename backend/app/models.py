@@ -183,3 +183,34 @@ class Job(Base):
     last_error: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class Subscription(TimestampMixin, Base):
+    __tablename__ = "subscriptions"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    provider: Mapped[str] = mapped_column(Text, default="razorpay")
+    provider_subscription_id: Mapped[str] = mapped_column(Text, unique=True)
+    provider_plan_id: Mapped[str] = mapped_column(Text)
+    plan: Mapped[str] = mapped_column(Text)
+    interval: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(Text, default="created")
+    current_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    current_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    cancel_at_cycle_end: Mapped[bool] = mapped_column(Boolean, default=False)
+    last_payment_id: Mapped[str | None] = mapped_column(Text)
+    raw: Mapped[dict] = mapped_column(JsonType, default=dict)
+
+
+class BillingEvent(Base):
+    __tablename__ = "billing_events"
+
+    id: Mapped[int] = mapped_column(BigId, primary_key=True, autoincrement=True)
+    provider: Mapped[str] = mapped_column(Text, default="razorpay")
+    event_id: Mapped[str] = mapped_column(Text, unique=True)
+    event_type: Mapped[str] = mapped_column(Text)
+    payload: Mapped[dict] = mapped_column(JsonType, default=dict)
+    processed: Mapped[bool] = mapped_column(Boolean, default=False)
+    error: Mapped[str | None] = mapped_column(Text)
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

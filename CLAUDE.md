@@ -31,5 +31,13 @@ Read README.md first. This file is for conventions that aren't obvious from the 
   `tests/test_flow.py` runs the whole product against it. Add to it when you add a feature.
 - Frontend: `npm run lint && npm run build` must pass (CI runs both).
 
+## Deploys
+- `main` is development, `prod` is production. `.github/workflows/deploy-backend.yml` deploys
+  the backend to EC2 on push to `prod` (tests → GHCR image → migrate → compose up). Amplify
+  deploys `frontend/` from `prod`. Never commit secrets; production config lives in
+  `/opt/creator-impact/.env` on the server and in the Amplify console.
+- Billing: `services/billing.py`. Webhooks are idempotent via `billing_events.event_id`.
+  Plan amounts in `PLANS` must match the Razorpay dashboard plans.
+
 ## Things not done yet (see docs/PRODUCT.md)
-Razorpay billing, rate calculator, media kit, campaign (multi-post) reports, brand side.
+Rate calculator, media kit, campaign (multi-post) reports, white-label, brand side.

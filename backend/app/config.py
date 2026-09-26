@@ -32,11 +32,24 @@ class Settings(BaseSettings):
     summarize_model: str = "claude-sonnet-5"
     classify_batch_size: int = 100
 
+    # Razorpay (Subscriptions). Create the plans in the Razorpay dashboard and paste their ids.
+    razorpay_key_id: str = ""
+    razorpay_key_secret: str = ""
+    razorpay_webhook_secret: str = ""
+    razorpay_plan_pro_monthly: str = ""
+    razorpay_plan_pro_yearly: str = ""
+    razorpay_plan_pro_plus_monthly: str = ""
+    razorpay_plan_pro_plus_yearly: str = ""
+
     # Product rules
     free_reports_per_month: int = 3
     baseline_sample_size: int = 20
     raw_comment_retention_days: int = 30
     max_comments_per_post: int = 5000
+
+    @property
+    def billing_enabled(self) -> bool:
+        return bool(self.razorpay_key_id and self.razorpay_key_secret)
 
     @property
     def is_production(self) -> bool:

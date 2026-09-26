@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
-from app.api import auth, meta, posts, reports
+from app.api import auth, billing, meta, posts, reports
 from app.config import get_settings
 from app.db import SessionLocal
 
@@ -37,14 +37,14 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    for router in (auth.router, posts.router, reports.router, meta.router):
+    for router in (auth.router, posts.router, reports.router, meta.router, billing.router):
         app.include_router(router)
 
     @app.get("/health")
     def health():
         with SessionLocal() as db:
             db.execute(text("select 1"))
-        return {"ok": True, "demo_mode": s.demo_mode, "llm": bool(s.anthropic_api_key)}
+        return {"ok": True, "demo_mode": s.demo_mode, "llm": bool(s.anthropic_api_key), "billing": s.billing_enabled}
 
     return app
 

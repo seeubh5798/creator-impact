@@ -99,7 +99,38 @@ merged by `claude-sonnet-5`; rules remain the fallback for any failed batch.
 2. Set a monthly spend limit in the console (₹2–5k is plenty for a pilot).
 3. Cost per report: roughly ₹10–40 for a post with 2,000 comments.
 
-## 5. Deploy
+## 5. Razorpay (subscriptions)
+
+1. razorpay.com → sign up → complete KYC (PAN, bank account, Udyam or GST helps). Test
+   mode works immediately; live payments need KYC approval (1–3 days).
+2. Dashboard → **Settings → API keys → Generate test key** → `RAZORPAY_KEY_ID`,
+   `RAZORPAY_KEY_SECRET`.
+3. Dashboard → **Subscriptions → Plans → Create plan**, four times:
+
+   | Plan name | Billing cycle | Amount | env var |
+   |---|---|---|---|
+   | Pro monthly | Monthly | ₹299 | `RAZORPAY_PLAN_PRO_MONTHLY` |
+   | Pro yearly | Yearly | ₹2,999 | `RAZORPAY_PLAN_PRO_YEARLY` |
+   | Pro+ monthly | Monthly | ₹999 | `RAZORPAY_PLAN_PRO_PLUS_MONTHLY` |
+   | Pro+ yearly | Yearly | ₹9,999 | `RAZORPAY_PLAN_PRO_PLUS_YEARLY` |
+
+   Copy each `plan_xxxxx` id into the matching env var. Amounts must match
+   `backend/app/services/billing.py` (`PLANS`), which is what the UI shows.
+4. Dashboard → **Settings → Webhooks → Add**: URL `https://api.yourdomain.com/billing/webhook`
+   (locally: an ngrok URL + `/billing/webhook`), secret = a long random string →
+   `RAZORPAY_WEBHOOK_SECRET`. Events: `subscription.authenticated`, `subscription.activated`,
+   `subscription.charged`, `subscription.pending`, `subscription.halted`,
+   `subscription.cancelled`, `subscription.completed`, `subscription.expired`, `payment.failed`.
+5. Test locally: with test keys in `backend/.env`, go to `/billing` → Upgrade → use
+   Razorpay's test UPI id `success@razorpay` or test card `4111 1111 1111 1111`. The plan
+   flips to Pro immediately; the webhook (if ngrok is set up) shows up in `billing_events`.
+6. Going live: repeat steps 2–4 in **Live mode** (keys and plans are separate from test
+   mode) and put the live values in `/opt/creator-impact/.env`.
+
+## 6. Deploy
+
+The recommended production setup is **AWS EC2 + Amplify**, fully documented in
+[DEPLOY.md](DEPLOY.md). Railway/Vercel below is the alternative if you'd rather not run a server.
 
 **Backend + worker → Railway** (Render works the same way)
 
@@ -129,7 +160,7 @@ merged by `claude-sonnet-5`; rules remain the fallback for any failed batch.
 - Sign in with your own tester Instagram account, tag a post, and check the worker logs on
   Railway for the analysis run.
 
-## 6. Going-live checklist
+## 7. Going-live checklist
 
 - [ ] Fill in `[LEGAL ENTITY NAME]` and contact email on `/privacy` and `/terms`; have a lawyer read them.
 - [ ] Udyam registration (free, udyamregistration.gov.in) — needed for Meta business verification and Razorpay.
@@ -138,4 +169,4 @@ merged by `claude-sonnet-5`; rules remain the fallback for any failed batch.
 - [ ] Anthropic spend limit set.
 - [ ] Supabase: enable daily backups (Pro plan) once there are paying users.
 - [ ] Error tracking: add Sentry DSN to both services (not wired yet; ~20 lines).
-- [ ] Razorpay: not built yet. Until then, upgrade pilot creators by setting `users.plan = 'founding'` in Supabase.
+- [ ] Razorpay live keys and live-mode plans in the server `.env`. Pilot creators: set `users.plan = 'founding'` in Supabase.

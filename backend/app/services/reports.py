@@ -30,10 +30,17 @@ def reports_this_month(db: Session, user: User) -> int:
     ) or 0
 
 
+def effective_plan(user: User) -> str:
+    if user.plan in ("pro", "pro_plus") and user.plan_expires_at and user.plan_expires_at < utcnow():
+        return "free"
+    return user.plan
+
+
 def usage(db: Session, user: User) -> dict:
-    limit = None if user.plan in UNLIMITED_PLANS else get_settings().free_reports_per_month
+    plan = effective_plan(user)
+    limit = None if plan in UNLIMITED_PLANS else get_settings().free_reports_per_month
     used = reports_this_month(db, user)
-    return {"plan": user.plan, "reports_this_month": used, "monthly_limit": limit,
+    return {"plan": plan, "reports_this_month": used, "monthly_limit": limit,
             "remaining": None if limit is None else max(0, limit - used)}
 
 

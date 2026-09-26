@@ -1,0 +1,121 @@
+# Backend release pipeline for the `prod` branch:
+#   test  ->  build image (GHCR)  ->  deploy to EC2 (migrate DB, roll API + worker)
+#
+# Required repository secrets (Settings -> Secrets and variables -> Actions):
+#   EC2_HOST      public IP or DNS of the EC2 box (e.g. 13.233.1.2)
+#   EC2_USER      ssh user, "ubuntu" on Ubuntu AMIs
+#   EC2_SSH_KEY   private key (PEM) that matches the instance key pair
+#
+# Server prerequisites: run deploy/ec2-setup.sh once and fill /opt/creator-impact/.env.
+
+name: Deploy backend (prod)
+
+on:
+  push:
+    branches: [prod]
+    paths: ["backend/**", "supabase/**", "deploy/**", ".github/workflows/deploy-backend.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}-backend
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_PASSWORD: postgres, POSTGRES_DB: impact_test }
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-retries 10
+    defaults: { run: { working-directory: backend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11", cache: pip, cache-dependency-path: backend/requirements-dev.txt }
+      - run: pip install -r requirements-dev.txt
+      - run: python -m pytest -q
+        env:
+          TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/impact_test
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions: { contents: read, packages: write }
+    outputs:
+      image: ${{ env.IMAGE }}:${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GITHUB_TOKEN }}" }
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: backend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ github.sha }}
+            ${{ env.IMAGE }}:prod
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    permissions: { contents: read, packages: read }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+      - name: Copy compose files
+        run: |
+          scp -i ~/.ssh/deploy_key deploy/docker-compose.prod.yml \
+            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/opt/creator-impact/docker-compose.yml"
+          scp -i ~/.ssh/deploy_key deploy/Caddyfile \
+            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/opt/creator-impact/Caddyfile"
+      - name: Migrate and roll out
+        env:
+          IMAGE_REF: ${{ needs.build.outputs.image }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ssh -i ~/.ssh/deploy_key "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
+            "IMAGE_REF='$IMAGE_REF' GHCR_USER='$GHCR_USER' GHCR_TOKEN='$GHCR_TOKEN' bash -s" <<'REMOTE'
+          set -euo pipefail
+          cd /opt/creator-impact
+          test -f .env || { echo "/opt/creator-impact/.env is missing. Run deploy/ec2-setup.sh and fill it in."; exit 1; }
+          grep -q '^API_DOMAIN=' .env || { echo "API_DOMAIN missing from .env"; exit 1; }
+
+          echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+          export BACKEND_IMAGE="$IMAGE_REF"
+          export API_DOMAIN="$(grep '^API_DOMAIN=' .env | cut -d= -f2-)"
+          docker compose pull -q api
+
+          echo "==> Running database migrations"
+          docker compose run --rm --no-deps api python -m scripts.migrate
+
+          echo "==> Rolling out $BACKEND_IMAGE"
+          # Persist the image ref so `docker compose` works interactively on the box later.
+          grep -v '^BACKEND_IMAGE=' .env > .env.tmp && echo "BACKEND_IMAGE=$BACKEND_IMAGE" >> .env.tmp && mv .env.tmp .env && chmod 600 .env
+          docker compose up -d --remove-orphans
+          docker image prune -f >/dev/null
+
+          echo "==> Health check"
+          for i in $(seq 1 20); do
+            if docker compose exec -T api python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)" 2>/dev/null; then
+              echo "API healthy"; docker compose ps; exit 0
+            fi
+            sleep 3
+          done
+          echo "API did not become healthy"; docker compose logs --tail=100 api; exit 1
+          REMOTE

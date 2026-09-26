@@ -76,7 +76,7 @@ export default function Home() {
             </div>
           ))}
         </div>
-        <p className="mt-4 text-sm text-muted">Prices include GST. Brand and agency plans coming soon.</p>
+        <p className="mt-4 text-sm text-muted">Prices include GST. Yearly plans get 2 months free. Brand and agency plans coming soon.</p>
       </section>
 
       <footer className="border-t border-line">

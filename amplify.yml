@@ -1,0 +1,27 @@
+# AWS Amplify Hosting build spec (monorepo: the Next.js app lives in frontend/).
+# Amplify auto-deploys the branch you connect (use `prod`). Set these environment
+# variables in the Amplify console for the app:
+#   BACKEND_URL, NEXT_PUBLIC_APP_NAME, NEXT_PUBLIC_SITE_URL, NEXT_PUBLIC_CONTACT_EMAIL
+version: 1
+applications:
+  - appRoot: frontend
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - nvm install 22 && nvm use 22
+            - npm ci
+        build:
+          commands:
+            # Amplify's SSR runtime does not see console env vars unless they are
+            # written into .env.production at build time.
+            - env | grep -e ^BACKEND_URL= -e ^NEXT_PUBLIC_ >> .env.production
+            - npm run build
+      artifacts:
+        baseDirectory: .next
+        files:
+          - "**/*"
+      cache:
+        paths:
+          - node_modules/**/*
+          - .next/cache/**/*

@@ -20,6 +20,7 @@ from app.instagram.client import refresh_long_lived_token
 from app.models import CommentLabel, IgAccount, Job, Report, utcnow
 from app.security import decrypt_token, encrypt_token
 from app.services import baseline as baseline_svc
+from app.services import billing
 from app.services.pipeline import analyze_post
 from app.services.sync import sync_media, update_profile
 
@@ -67,8 +68,15 @@ def handle_purge_raw_comments(db, payload: dict) -> None:
     )
 
 
+def handle_expire_plans(db, payload: dict) -> None:
+    n = billing.expire_plans(db)
+    if n:
+        log.info("downgraded %d expired plans", n)
+
+
 HANDLERS = {
     "analyze_post": handle_analyze_post,
+    "expire_plans": handle_expire_plans,
     "sync_account": handle_sync_account,
     "refresh_tokens": handle_refresh_tokens,
     "purge_raw_comments": handle_purge_raw_comments,
@@ -124,6 +132,7 @@ def schedule_periodic(db) -> None:
     day = utcnow().strftime("%Y%m%d")
     queue.enqueue(db, "refresh_tokens", dedupe_key=f"periodic:refresh_tokens:{day}")
     queue.enqueue(db, "purge_raw_comments", dedupe_key=f"periodic:purge:{day}")
+    queue.enqueue(db, "expire_plans", dedupe_key=f"periodic:expire_plans:{day}")
     db.commit()
     log.debug("periodic jobs scheduled for %s", hour)
 

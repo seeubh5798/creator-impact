@@ -61,11 +61,20 @@ python -m app.worker                 # background worker
 cd frontend && npm install && npm run dev   # :3000, proxies /api to :8000
 ```
 
-Tests: 43 backend tests (unit + full demo flow) run in CI against Postgres; the frontend
-is linted and built in CI.
+Tests: 47 backend tests (unit, full demo flow, billing) run in CI against Postgres; the
+frontend is linted and built in CI.
 
 ## Docs
 
-- [docs/SETUP.md](docs/SETUP.md): Supabase, Meta app, deploy to Railway + Vercel, going live checklist.
-- [docs/PRODUCT.md](docs/PRODUCT.md): what's built, what's next, pricing.
+- [docs/CHECKLIST.md](docs/CHECKLIST.md): **start here**. Everything you need to do, in order.
+- [docs/DEPLOY.md](docs/DEPLOY.md): AWS EC2 + Amplify + Supabase + GoDaddy, CI/CD, releasing.
+- [docs/SETUP.md](docs/SETUP.md): local setup, Supabase, Meta app, Razorpay, Claude API.
+- [docs/FEATURES.md](docs/FEATURES.md): what creators get, brand side status, plans, how to run the pilot.
+- [docs/PRODUCT.md](docs/PRODUCT.md): roadmap and known limitations.
 - [CLAUDE.md](CLAUDE.md): conventions for working on this repo with Claude Code.
+
+## Branches and deploys
+
+`main` = development (CI on every push). `prod` = what runs in production: pushing to it
+deploys the backend to EC2 via GitHub Actions (tests → image → migrate → roll out) and the
+frontend via Amplify. Release with `git checkout prod && git merge --ff-only main && git push`.

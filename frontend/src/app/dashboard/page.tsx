@@ -94,6 +94,7 @@ export default function DashboardPage() {
         right={
           <>
             {me?.account && <span className="hidden text-sm text-muted md:inline">@{me.account.username}</span>}
+            <Link href="/billing" className={`${buttonSecondary} h-9 px-3 text-sm`}>Plan</Link>
             <button type="button" onClick={logout} className={`${buttonSecondary} h-9 px-3 text-sm`}>Sign out</button>
           </>
         }
@@ -105,7 +106,7 @@ export default function DashboardPage() {
             <p className="mt-1 text-[15px] text-muted">
               Tag a sponsored post to get its impact report.
               {me?.usage.monthly_limit !== null && me?.usage.monthly_limit !== undefined && (
-                <> {me.usage.remaining} of {me.usage.monthly_limit} free reports left this month.</>
+                <> {me.usage.remaining} of {me.usage.monthly_limit} free reports left this month. <Link href="/billing">Upgrade</Link></>
               )}
               {me?.user.is_demo && <> You&apos;re on the shared demo account.</>}
             </p>
