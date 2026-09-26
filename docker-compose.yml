@@ -1,0 +1,54 @@
+# Local stack: Postgres + API + worker + web.  `docker compose up --build`
+# Then open http://localhost:3000 and click "Try the demo account".
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: impact
+    ports: ["54329:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      retries: 20
+
+  migrate:
+    build: { context: ., dockerfile: backend/Dockerfile }
+    command: python -m scripts.migrate
+    environment: &backend_env
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/impact
+      FRONTEND_URL: http://localhost:3000
+      DEMO_MODE: "true"
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      INSTAGRAM_APP_ID: ${INSTAGRAM_APP_ID:-}
+      INSTAGRAM_APP_SECRET: ${INSTAGRAM_APP_SECRET:-}
+    depends_on:
+      db: { condition: service_healthy }
+
+  api:
+    build: { context: ., dockerfile: backend/Dockerfile }
+    environment: *backend_env
+    ports: ["8000:8000"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+  worker:
+    build: { context: ., dockerfile: backend/Dockerfile }
+    command: python -m app.worker
+    environment: *backend_env
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+  web:
+    build: { context: frontend }
+    environment:
+      BACKEND_URL: http://api:8000
+      NEXT_PUBLIC_APP_NAME: Impact
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+    ports: ["3000:3000"]
+    depends_on: [api]
+
+volumes:
+  pgdata:
