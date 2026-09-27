@@ -1,9 +1,9 @@
-# Production stack on the EC2 box: API + worker + Caddy (automatic HTTPS).
+# Server stack (dev and prod boxes are identical): API + worker + Caddy (automatic HTTPS).
 # Postgres lives in Supabase, so there is no database container here.
 #
-# Lives at /opt/creator-impact/docker-compose.yml on the server; the deploy
-# workflow copies it there on every release. Config comes from /opt/creator-impact/.env
-# (see deploy/env.prod.example).
+# Lives at /opt/proofluence/docker-compose.yml on the server; the deploy
+# workflow copies it there on every release. Config comes from /opt/proofluence/.env
+# (templates: deploy/env.dev.example, deploy/env.prod.example).
 
 services:
   api:

@@ -1,70 +1,61 @@
-# Your to-do list, in order
+# Proofluence: your to-do list, in order
 
-Everything a human has to do. Code and pipelines are done; these are accounts, keys and
-clicks. Time estimates are for a first pass. Details for each step live in the linked docs.
+Code, pipelines and docs are done. These are the accounts, keys and clicks only you can do.
+Full click-by-click instructions: **[AWS_SETUP.md](AWS_SETUP.md)**.
 
-## Today (1 hour): run it on your laptop
-
-**Option A: Docker (recommended, nothing else to install)**
+## Today: run it on your Mac (15 min)
 
 ```bash
 git clone https://github.com/seeubh5798/creator-impact && cd creator-impact
-docker compose up --build            # first run ~3 min; later runs ~10 s
+docker compose up --build          # port 3000/8000 busy? WEB_PORT=3001 API_PORT=8001 docker compose up --build
 ```
-If port 3000 or 8000 is taken on your machine: `WEB_PORT=3001 API_PORT=8001 docker compose up`.
+Open http://localhost:3000 (or :3001) → **Try the demo account** → tag the `#ad` post → report in ~10 s.
 
-Open http://localhost:3000 → **Try the demo account** → on a post with `#ad` click
-**Tag as sponsored** → report appears in ~10 s. Stop with `Ctrl+C`; `docker compose down -v`
-wipes the local database.
+## Setup, in order (half a day)
 
-**Option B: without Docker** (when you want hot-reload while developing)
+| # | Task | Result | Guide |
+|---|------|--------|-------|
+| 1 | Buy `proofluence.com` on GoDaddy, clear default DNS records | domain | [§1](AWS_SETUP.md#1-domain-godaddy-10-min) |
+| 2 | AWS account, root MFA, `shubham-admin` IAM user + MFA, $30 budget alert, region Mumbai | safe AWS account | [§2](AWS_SETUP.md#2-aws-account-30-min-do-this-carefully-once) |
+| 3 | Supabase org `Proofluence`, projects `proofluence-dev` + `proofluence-prod` (Mumbai), save passwords, copy session-pooler URIs | 2 `DATABASE_URL`s | [§3](AWS_SETUP.md#3-supabase-two-databases-15-min) |
+| 4 | Security group `proofluence-api-sg`, EC2 `proofluence-dev-api` (t3.micro) + Elastic IP, DNS `A api-dev`, run `ec2-setup.sh` | dev server | [§4](AWS_SETUP.md#4-ec2-the-dev-server-30-min) |
+| 5 | Same for `proofluence-prod-api` (t3.small), DNS `A api` | prod server | [§5](AWS_SETUP.md#5-ec2-the-prod-server-15-min) |
+| 6 | `gen_keys.py` twice; fill `/opt/proofluence/.env` on each box from `deploy/env.dev.example` / `env.prod.example`; back both up in a password manager | server config | [§6](AWS_SETUP.md#6-the-server-env-files-20-min) |
+| 7 | Make repo **private**; GitHub Environments `dev` + `production`, each with `EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY` | CI/CD can deploy | [§7](AWS_SETUP.md#7-github-environments-and-secrets-10-min) |
+| 8 | Actions → Deploy backend → run on `main`, then `prod`; `curl …/health` on both | APIs live, DB tables created | [§8](AWS_SETUP.md#8-first-backend-deploys-10-min) |
+| 9 | Amplify app `proofluence-web`: branch `main` (dev vars), branch `prod` (overrides), custom domains `dev.` / `www.` / root forwarding | sites live | [§9](AWS_SETUP.md#9-amplify-the-websites-20-min) |
+| 10 | Meta apps `Proofluence Dev` + `Proofluence`, URLs per env, add pilot creators as Instagram testers | real Instagram login | [§10](AWS_SETUP.md#10-meta-apps-when-youre-ready-for-real-instagram-logins) |
+| 11 | Razorpay: test keys + test plans → dev; KYC, live keys + live plans → prod; webhooks | payments | [§11](AWS_SETUP.md#11-razorpay), [SETUP §5](SETUP.md#5-razorpay-subscriptions) |
+| 12 | Optional: Anthropic API keys (one per env) with a monthly limit | better classification | [SETUP §4](SETUP.md#4-claude-api-better-comment-classification) |
+| 13 | Udyam registration (free) — Meta business verification and Razorpay KYC use it | | udyamregistration.gov.in |
+
+## Where every secret lives (never in GitHub)
+
+| Secret | Lives in |
+|---|---|
+| DB URLs, app secrets, Meta, Razorpay, Anthropic keys | `/opt/proofluence/.env` on each EC2 box (+ your password manager) |
+| EC2 IPs and SSH private keys | GitHub → Settings → Environments → `dev` / `production` |
+| `.pem` key files | `~/.ssh/` on your Mac only |
+| Site config (`BACKEND_URL`, `NEXT_PUBLIC_*`) | Amplify → Environment variables (these aren't secret) |
+| Supabase DB passwords, AWS root/admin logins | password manager |
+
+## Every release (2 minutes)
 
 ```bash
-# needs Python 3.11+, Node 22+, and Postgres running locally (or `docker compose up db`)
-cd backend && cp .env.example .env && python scripts/gen_keys.py >> .env
-pip install -r requirements-dev.txt && python -m scripts.migrate
-uvicorn app.main:app --reload                  # terminal 1
-python -m app.worker                           # terminal 2
-cd ../frontend && cp .env.example .env.local && npm install && npm run dev   # terminal 3
+git push                                                    # main -> dev deploys itself
+git checkout prod && git merge --ff-only main && git push   # -> prod deploys itself
+git checkout main
 ```
 
-Tests: `cd backend && python -m pytest` (needs a database named `impact_test`),
-`cd frontend && npm run lint && npm run build`.
+## Pilot
 
-## This week (half a day): accounts
+Follow [FEATURES.md](FEATURES.md#how-to-run-the-pilot). The metric: do creators send the
+report to a brand, and does the brand open it (`reports.view_count`)?
 
-| # | Do | Where the value goes | Doc |
-|---|----|---------------------|-----|
-| 1 | Create a Supabase project (Mumbai), run the two SQL files in `supabase/migrations/` in the SQL editor, copy the **session pooler** URI | `DATABASE_URL` | [SETUP.md §2](SETUP.md#2-supabase-production-database) |
-| 2 | Buy the domain on GoDaddy. Decide: `yourdomain.com` = app, `api.yourdomain.com` = backend | `FRONTEND_URL`, `API_DOMAIN`, `NEXT_PUBLIC_SITE_URL` | [DEPLOY.md §1](DEPLOY.md#1-godaddy-dns) |
-| 3 | AWS account → launch the EC2 box, run `deploy/ec2-setup.sh`, fill `/opt/creator-impact/.env` | server | [DEPLOY.md §2](DEPLOY.md#2-ec2-backend--worker) |
-| 4 | GitHub → repo Settings → Secrets: `EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY` | pipeline | [DEPLOY.md §3](DEPLOY.md#3-github-secrets-and-the-first-deploy) |
-| 5 | AWS Amplify → connect the repo, branch `prod`, set env vars, add the domain | frontend | [DEPLOY.md §4](DEPLOY.md#4-amplify-frontend) |
-| 6 | Meta developer app → Instagram product → add redirect/deauth/deletion URLs → add your 2 creators as **Instagram testers** | `INSTAGRAM_APP_ID/SECRET` | [SETUP.md §3](SETUP.md#3-meta-app-real-instagram-login) |
-| 7 | Razorpay account → KYC → create 4 subscription plans → webhook | `RAZORPAY_*` | [SETUP.md §5](SETUP.md#5-razorpay-subscriptions) |
-| 8 | Anthropic console → API key with a ₹2–5k monthly limit (optional, better classification) | `ANTHROPIC_API_KEY` | [SETUP.md §4](SETUP.md#4-claude-api-better-comment-classification) |
-| 9 | Udyam registration (free, 15 min) — Meta business verification and Razorpay both ask for it | — | udyamregistration.gov.in |
+## Before public launch
 
-## Release (5 minutes, every time)
-
-```bash
-git checkout prod && git merge --ff-only main && git push
-```
-Backend: GitHub Actions runs tests → builds the image → migrates the Supabase DB →
-restarts API + worker on EC2 (watch it under the Actions tab). Frontend: Amplify builds and
-deploys `prod` by itself. Both take ~5 minutes. [DEPLOY.md §5](DEPLOY.md#5-releasing)
-
-## Pilot (weeks 2–6)
-
-Follow [FEATURES.md](FEATURES.md#how-to-run-the-pilot): onboard the two creators as
-Instagram testers, generate reports on their last 3–5 brand posts, and track whether they
-send a report to a brand. That single metric decides whether to keep building.
-
-## Before Meta app review / public launch
-
-- [ ] Fill `[LEGAL ENTITY NAME]` and contact email on `/privacy` and `/terms` (frontend/src/app/privacy, terms)
-- [ ] Meta business verification (Udyam/GST + address proof), submit app review with screen recordings
-- [ ] `DEMO_MODE=false` on the server
-- [ ] Switch Razorpay from test keys to live keys, re-create the plans in live mode
-- [ ] Supabase: enable Point-in-Time Recovery (Pro plan) once paying users exist
-- [ ] Pick the final name: change `NEXT_PUBLIC_APP_NAME` in Amplify, buy the domain, done
+- [ ] Fill `[LEGAL ENTITY NAME]` and contact email on `/privacy` and `/terms` (have a lawyer read them)
+- [ ] Meta business verification + app review for the `Proofluence` app; then `DEMO_MODE=false` on prod
+- [ ] Razorpay live mode on prod
+- [ ] Supabase `proofluence-prod` → Pro plan (daily backups)
+- [ ] UptimeRobot monitors on `https://api.proofluence.com/health` and the site

@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Impact";
+const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Proofluence";
 
 export default function SiteHeader({ right }: { right?: React.ReactNode }) {
   return (

@@ -57,7 +57,7 @@ To give a pilot creator free Pro: Supabase → Table editor → `users` → set 
 Goal: learn whether creators **send** the report to brands. Not whether they like it.
 
 **Week 1: before they touch it**
-1. Deploy (DEPLOY.md). Keep `DEMO_MODE=true` so the "Try the demo account" button exists;
+1. Deploy (AWS_SETUP.md). Keep `DEMO_MODE=true` so the "Try the demo account" button exists;
    send creators the public demo report link as the pitch.
 2. Meta app: add both creators' Instagram accounts as **Instagram testers** (SETUP.md §3).
    They accept the invite in Instagram → Settings → Apps and websites → Tester invites.
@@ -65,7 +65,7 @@ Goal: learn whether creators **send** the report to brands. Not whether they lik
 3. In Supabase, after they log in once, set their `users.plan = 'founding'`.
 
 **Week 1: onboarding call (20 min, screen share)**
-1. They open yourdomain.com → Continue with Instagram → approve the 3 permissions.
+1. They open proofluence.com → Continue with Instagram → approve the 3 permissions.
 2. Dashboard shows their posts. Ask them to tag their **last 3 brand posts** with brand names.
 3. Reports take 1–3 minutes each (real posts have more comments than the demo). Open each
    together. Ask: *"Is anything here wrong?"* (spam not caught, a comment misread as buying

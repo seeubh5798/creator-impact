@@ -1,27 +1,31 @@
-# Backend release pipeline for the `prod` branch:
-#   test  ->  build image (GHCR)  ->  deploy to EC2 (migrate DB, roll API + worker)
+# Backend release pipeline, two environments:
+#   push to main  -> dev         (api-dev.proofluence.com)
+#   push to prod  -> production  (api.proofluence.com)
 #
-# Required repository secrets (Settings -> Secrets and variables -> Actions):
-#   EC2_HOST      public IP or DNS of the EC2 box (e.g. 13.233.1.2)
-#   EC2_USER      ssh user, "ubuntu" on Ubuntu AMIs
-#   EC2_SSH_KEY   private key (PEM) that matches the instance key pair
+# Each run: test -> build image (GHCR) -> deploy to that environment's EC2 box
+# (copy compose files, run DB migrations, roll API + worker, health check).
 #
-# Server prerequisites: run deploy/ec2-setup.sh once and fill /opt/creator-impact/.env.
+# Secrets live in GitHub *Environments* (Settings -> Environments), not the repo:
+#   environment "dev":         EC2_HOST, EC2_USER, EC2_SSH_KEY
+#   environment "production":  EC2_HOST, EC2_USER, EC2_SSH_KEY   (+ required reviewer)
+# App config (.env) never leaves the server: /opt/proofluence/.env
 
-name: Deploy backend (prod)
+name: Deploy backend
 
 on:
   push:
-    branches: [prod]
+    branches: [main, prod]
     paths: ["backend/**", "supabase/**", "deploy/**", ".github/workflows/deploy-backend.yml"]
   workflow_dispatch:
 
 concurrency:
-  group: deploy-backend
+  group: deploy-backend-${{ github.ref_name }}
   cancel-in-progress: false
 
 env:
-  IMAGE: ghcr.io/${{ github.repository }}-backend
+  IMAGE: ghcr.io/${{ github.repository_owner }}/proofluence-backend
+  APP_DIR: /opt/proofluence
+  TARGET: ${{ github.ref_name == 'prod' && 'production' || 'dev' }}
 
 jobs:
   test:
@@ -47,9 +51,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions: { contents: read, packages: write }
     outputs:
-      image: ${{ env.IMAGE }}:${{ github.sha }}
+      image: ${{ steps.ref.outputs.image }}
     steps:
       - uses: actions/checkout@v4
+      - id: ref
+        run: echo "image=${IMAGE}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GITHUB_TOKEN }}" }
@@ -60,17 +66,26 @@ jobs:
           push: true
           tags: |
             ${{ env.IMAGE }}:${{ github.sha }}
-            ${{ env.IMAGE }}:prod
+            ${{ env.IMAGE }}:${{ env.TARGET }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    environment: production
+    environment: ${{ github.ref_name == 'prod' && 'production' || 'dev' }}
     permissions: { contents: read, packages: read }
     steps:
       - uses: actions/checkout@v4
+      - name: Check secrets are configured
+        env:
+          HOST: ${{ secrets.EC2_HOST }}
+          KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          if [ -z "$HOST" ] || [ -z "$KEY" ]; then
+            echo "::error::EC2_HOST / EC2_SSH_KEY are not set for the '${TARGET}' environment. See docs/AWS_SETUP.md step 7."
+            exit 1
+          fi
       - name: Prepare SSH
         run: |
           mkdir -p ~/.ssh
@@ -80,9 +95,9 @@ jobs:
       - name: Copy compose files
         run: |
           scp -i ~/.ssh/deploy_key deploy/docker-compose.prod.yml \
-            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/opt/creator-impact/docker-compose.yml"
+            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:${APP_DIR}/docker-compose.yml"
           scp -i ~/.ssh/deploy_key deploy/Caddyfile \
-            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/opt/creator-impact/Caddyfile"
+            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:${APP_DIR}/Caddyfile"
       - name: Migrate and roll out
         env:
           IMAGE_REF: ${{ needs.build.outputs.image }}
@@ -90,11 +105,11 @@ jobs:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ssh -i ~/.ssh/deploy_key "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
-            "IMAGE_REF='$IMAGE_REF' GHCR_USER='$GHCR_USER' GHCR_TOKEN='$GHCR_TOKEN' bash -s" <<'REMOTE'
+            "APP_DIR='$APP_DIR' IMAGE_REF='$IMAGE_REF' GHCR_USER='$GHCR_USER' GHCR_TOKEN='$GHCR_TOKEN' bash -s" <<'REMOTE'
           set -euo pipefail
-          cd /opt/creator-impact
-          test -f .env || { echo "/opt/creator-impact/.env is missing. Run deploy/ec2-setup.sh and fill it in."; exit 1; }
-          grep -q '^API_DOMAIN=' .env || { echo "API_DOMAIN missing from .env"; exit 1; }
+          cd "$APP_DIR"
+          test -f .env || { echo "$APP_DIR/.env is missing. See docs/AWS_SETUP.md step 6."; exit 1; }
+          grep -q '^API_DOMAIN=.\+' .env || { echo "API_DOMAIN missing from .env"; exit 1; }
 
           echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
           export BACKEND_IMAGE="$IMAGE_REF"
@@ -105,10 +120,10 @@ jobs:
           docker compose run --rm --no-deps api python -m scripts.migrate
 
           echo "==> Rolling out $BACKEND_IMAGE"
-          # Persist the image ref so `docker compose` works interactively on the box later.
           grep -v '^BACKEND_IMAGE=' .env > .env.tmp && echo "BACKEND_IMAGE=$BACKEND_IMAGE" >> .env.tmp && mv .env.tmp .env && chmod 600 .env
           docker compose up -d --remove-orphans
           docker image prune -f >/dev/null
+          docker logout ghcr.io >/dev/null
 
           echo "==> Health check"
           for i in $(seq 1 20); do

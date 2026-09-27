@@ -6,7 +6,7 @@ import SiteHeader, { buttonSecondary } from "@/components/SiteHeader";
 import { backendUrl } from "@/lib/api";
 import type { Report } from "@/lib/types";
 
-const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Impact";
+const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Proofluence";
 
 async function fetchReport(slug: string): Promise<Report | null> {
   const res = await fetch(backendUrl(`/public/reports/${encodeURIComponent(slug)}`), { cache: "no-store" });

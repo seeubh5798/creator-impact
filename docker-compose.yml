@@ -57,7 +57,7 @@ services:
       args: { BACKEND_URL: http://api:8000 }
     environment:
       BACKEND_URL: http://api:8000
-      NEXT_PUBLIC_APP_NAME: Impact
+      NEXT_PUBLIC_APP_NAME: Proofluence
       NEXT_PUBLIC_SITE_URL: http://localhost:${WEB_PORT:-3000}
     ports: ["${WEB_PORT:-3000}:3000"]
     depends_on: [api]

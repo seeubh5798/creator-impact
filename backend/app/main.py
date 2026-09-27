@@ -28,7 +28,7 @@ def create_app() -> FastAPI:
     logging.basicConfig(level=logging.INFO)
     _check_production_config()
     s = get_settings()
-    app = FastAPI(title="Creator Impact API", version="0.1.0")
+    app = FastAPI(title="Proofluence API", version="0.1.0")
     # The Next.js app proxies /api/* here, so CORS is only needed for local tools.
     app.add_middleware(
         CORSMiddleware,

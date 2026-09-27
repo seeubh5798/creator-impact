@@ -1,6 +1,6 @@
 import SiteHeader from "@/components/SiteHeader";
 
-const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Impact";
+const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Proofluence";
 const CONTACT = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "[YOUR CONTACT EMAIL]";
 
 export const metadata = { title: "Privacy policy" };

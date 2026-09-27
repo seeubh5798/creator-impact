@@ -1,7 +1,7 @@
 import type { Report, TopicCount } from "@/lib/types";
 import { compact, mediaLabel, pct, ratioText, shortDate } from "@/lib/format";
 
-const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Impact";
+const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Proofluence";
 
 function initials(name: string): string {
   return name.replace(/[^a-zA-Z]/g, "").slice(0, 2).toUpperCase() || "IG";

@@ -1,4 +1,4 @@
-# Working on creator-impact
+# Working on Proofluence (repo: creator-impact)
 
 Read README.md first. This file is for conventions that aren't obvious from the code.
 
@@ -32,10 +32,13 @@ Read README.md first. This file is for conventions that aren't obvious from the 
 - Frontend: `npm run lint && npm run build` must pass (CI runs both).
 
 ## Deploys
-- `main` is development, `prod` is production. `.github/workflows/deploy-backend.yml` deploys
-  the backend to EC2 on push to `prod` (tests → GHCR image → migrate → compose up). Amplify
-  deploys `frontend/` from `prod`. Never commit secrets; production config lives in
-  `/opt/creator-impact/.env` on the server and in the Amplify console.
+- Two environments. `main` → dev (dev.proofluence.com / api-dev.proofluence.com),
+  `prod` → production (proofluence.com / api.proofluence.com). `.github/workflows/deploy-backend.yml`
+  deploys the backend to that environment's EC2 box on push (tests → GHCR image → migrate →
+  compose up), using GitHub *Environment* secrets `dev` / `production`. Amplify deploys
+  `frontend/` for both branches. Full guide: docs/AWS_SETUP.md.
+- Never commit secrets. Server config lives in `/opt/proofluence/.env` (templates in
+  `deploy/env.*.example`), site config in the Amplify console. CI runs gitleaks.
 - Billing: `services/billing.py`. Webhooks are idempotent via `billing_events.event_id`.
   Plan amounts in `PLANS` must match the Razorpay dashboard plans.
 

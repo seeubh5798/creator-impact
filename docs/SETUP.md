@@ -65,10 +65,10 @@ time, so start it early.
 3. In the app dashboard, add the product **Instagram** and choose **"API setup with
    Instagram login"** (not "with Facebook login").
 4. Under *Business login settings*:
-   - OAuth redirect URI: `https://<your-domain>/api/auth/instagram/callback`
+   - OAuth redirect URI: `https://proofluence.com/api/auth/instagram/callback`
      (and `http://localhost:3000/api/auth/instagram/callback` for local testing)
-   - Deauthorize callback URL: `https://<your-domain>/api/meta/deauthorize`
-   - Data deletion request URL: `https://<your-domain>/api/meta/data-deletion`
+   - Deauthorize callback URL: `https://proofluence.com/api/meta/deauthorize`
+   - Data deletion request URL: `https://proofluence.com/api/meta/data-deletion`
 5. Copy the **Instagram app ID** and **Instagram app secret** (from the Instagram product
    page, not the main app settings) into `INSTAGRAM_APP_ID` / `INSTAGRAM_APP_SECRET`.
 6. **Testing before review**: App roles → Instagram testers → add your Instagram account,
@@ -116,7 +116,7 @@ merged by `claude-sonnet-5`; rules remain the fallback for any failed batch.
 
    Copy each `plan_xxxxx` id into the matching env var. Amounts must match
    `backend/app/services/billing.py` (`PLANS`), which is what the UI shows.
-4. Dashboard → **Settings → Webhooks → Add**: URL `https://api.yourdomain.com/billing/webhook`
+4. Dashboard → **Settings → Webhooks → Add**: URL `https://api.proofluence.com/billing/webhook`
    (locally: an ngrok URL + `/billing/webhook`), secret = a long random string →
    `RAZORPAY_WEBHOOK_SECRET`. Events: `subscription.authenticated`, `subscription.activated`,
    `subscription.charged`, `subscription.pending`, `subscription.halted`,
@@ -125,12 +125,12 @@ merged by `claude-sonnet-5`; rules remain the fallback for any failed batch.
    Razorpay's test UPI id `success@razorpay` or test card `4111 1111 1111 1111`. The plan
    flips to Pro immediately; the webhook (if ngrok is set up) shows up in `billing_events`.
 6. Going live: repeat steps 2–4 in **Live mode** (keys and plans are separate from test
-   mode) and put the live values in `/opt/creator-impact/.env`.
+   mode) and put the live values in `/opt/proofluence/.env`.
 
 ## 6. Deploy
 
 The recommended production setup is **AWS EC2 + Amplify**, fully documented in
-[DEPLOY.md](DEPLOY.md). Railway/Vercel below is the alternative if you'd rather not run a server.
+[AWS_SETUP.md](AWS_SETUP.md). Railway/Vercel below is the alternative if you'd rather not run a server.
 
 **Backend + worker → Railway** (Render works the same way)
 
@@ -138,7 +138,7 @@ The recommended production setup is **AWS EC2 + Amplify**, fully documented in
    and the Dockerfile path to `backend/Dockerfile`.
 2. Variables: everything from `backend/.env.example` with production values.
    `ENV=production`, `DEMO_MODE=false` (keep `true` while the two influencers pilot if you
-   want the sample report visible on the login page), `FRONTEND_URL=https://<your-domain>`.
+   want the sample report visible on the login page), `FRONTEND_URL=https://proofluence.com`.
    The app refuses to start in production with the dev secrets.
 3. Add a second service from the same repo/Dockerfile with **start command**
    `python -m app.worker`. Same variables. This is the worker.
@@ -150,13 +150,13 @@ The recommended production setup is **AWS EC2 + Amplify**, fully documented in
 
 1. Import the repo, root directory `frontend`.
 2. Environment variables: `BACKEND_URL=<Railway API URL>`, `NEXT_PUBLIC_APP_NAME=<name>`,
-   `NEXT_PUBLIC_SITE_URL=https://<your-domain>`, `NEXT_PUBLIC_CONTACT_EMAIL=<email>`.
+   `NEXT_PUBLIC_SITE_URL=https://proofluence.com`, `NEXT_PUBLIC_CONTACT_EMAIL=<email>`.
 3. Add your domain. Because `/api/*` is proxied by Next.js, the browser only ever talks to
    your domain; the Railway URL never appears in the client.
 
 **After deploy**
 
-- `https://<your-domain>/api/health` should return `{"ok": true, ...}`.
+- `https://proofluence.com/api/health` should return `{"ok": true, ...}`.
 - Sign in with your own tester Instagram account, tag a post, and check the worker logs on
   Railway for the analysis run.
 

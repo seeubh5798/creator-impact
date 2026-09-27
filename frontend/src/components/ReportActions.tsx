@@ -34,7 +34,7 @@ export default function ReportActions({
       const dataUrl = await toPng(node, { pixelRatio: 2, backgroundColor: "#f5f2ec", cacheBust: true });
       const a = document.createElement("a");
       a.href = dataUrl;
-      a.download = `impact-report-${slug}.png`;
+      a.download = `proofluence-report-${slug}.png`;
       a.click();
     } finally {
       setBusy(null);

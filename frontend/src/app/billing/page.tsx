@@ -7,7 +7,7 @@ import SiteHeader, { buttonPrimary, buttonSecondary } from "@/components/SiteHea
 import { api, ApiError } from "@/lib/api";
 import { shortDate } from "@/lib/format";
 
-const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Impact";
+const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Proofluence";
 
 type Billing = {
   enabled: boolean;

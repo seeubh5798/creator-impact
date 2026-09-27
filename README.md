@@ -1,12 +1,12 @@
-# creator-impact
+# Proofluence
 
 Verified impact reports for Instagram creators. A creator connects Instagram, tags a
 sponsored post, and gets a shareable one-page report: buying-intent comments (English,
 Hindi, Hinglish), top audience questions and objections, and saves/shares/reach compared
 with the creator's own recent posts. The report is what the creator sends to the brand.
 
-**Status:** MVP. Works end to end in demo mode today; real Instagram login needs a Meta app
-(see [docs/SETUP.md](docs/SETUP.md)). Product name is still a placeholder (`NEXT_PUBLIC_APP_NAME`).
+**Status:** MVP. Works end to end in demo mode; real Instagram login needs a Meta app
+(see [docs/SETUP.md](docs/SETUP.md)). Repo name is `creator-impact`; the product is **Proofluence**.
 
 ## Run it in 5 minutes
 
@@ -67,14 +67,21 @@ frontend is linted and built in CI.
 ## Docs
 
 - [docs/CHECKLIST.md](docs/CHECKLIST.md): **start here**. Everything you need to do, in order.
-- [docs/DEPLOY.md](docs/DEPLOY.md): AWS EC2 + Amplify + Supabase + GoDaddy, CI/CD, releasing.
+- [docs/AWS_SETUP.md](docs/AWS_SETUP.md): AWS account, Supabase, EC2, Amplify, GoDaddy, dev + prod, every `.env` value.
 - [docs/SETUP.md](docs/SETUP.md): local setup, Supabase, Meta app, Razorpay, Claude API.
 - [docs/FEATURES.md](docs/FEATURES.md): what creators get, brand side status, plans, how to run the pilot.
 - [docs/PRODUCT.md](docs/PRODUCT.md): roadmap and known limitations.
 - [CLAUDE.md](CLAUDE.md): conventions for working on this repo with Claude Code.
 
-## Branches and deploys
+## Environments
 
-`main` = development (CI on every push). `prod` = what runs in production: pushing to it
-deploys the backend to EC2 via GitHub Actions (tests → image → migrate → roll out) and the
-frontend via Amplify. Release with `git checkout prod && git merge --ff-only main && git push`.
+| | dev | prod |
+|---|---|---|
+| Branch | `main` | `prod` |
+| Site | dev.proofluence.com | proofluence.com |
+| API | api-dev.proofluence.com | api.proofluence.com |
+| Database | Supabase `proofluence-dev` | Supabase `proofluence-prod` |
+
+Push to a branch and GitHub Actions (backend, incl. DB migrations) and Amplify (frontend)
+deploy that environment. Release to prod: `git checkout prod && git merge --ff-only main && git push`.
+Secrets are never in git: see [docs/AWS_SETUP.md](docs/AWS_SETUP.md#6-the-server-env-files-20-min).

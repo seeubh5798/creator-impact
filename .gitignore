@@ -1,7 +1,14 @@
-# secrets
+# ---- secrets: never commit. Only *.example templates are allowed. ----
 .env
-.env.local
-.env.*.local
+.env.*
+*.env
+!*.example
+!.env.example
+!.env.*.example
+*.pem
+*.key
+id_rsa*
+secrets/
 
 # python
 __pycache__/

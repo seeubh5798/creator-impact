@@ -1,6 +1,6 @@
 import SiteHeader from "@/components/SiteHeader";
 
-const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Impact";
+const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Proofluence";
 
 export const metadata = { title: "Terms of service" };
 

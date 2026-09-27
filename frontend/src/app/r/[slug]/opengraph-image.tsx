@@ -6,7 +6,7 @@ export const alt = "Creator impact report";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Impact";
+const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Proofluence";
 
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
