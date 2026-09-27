@@ -1,5 +1,6 @@
 # Local stack: Postgres + API + worker + web.  `docker compose up --build`
 # Then open http://localhost:3000 and click "Try the demo account".
+# Port already taken?  WEB_PORT=3001 API_PORT=8001 docker compose up
 # Optional keys (Instagram, Razorpay, Anthropic) are read from a `.env` file next to
 # this file; copy .env.docker.example to .env to set them.
 
@@ -39,7 +40,7 @@ services:
   api:
     build: { context: ., dockerfile: backend/Dockerfile }
     environment: *backend_env
-    ports: ["8000:8000"]
+    ports: ["${API_PORT:-8000}:8000"]
     depends_on:
       migrate: { condition: service_completed_successfully }
 
@@ -57,8 +58,8 @@ services:
     environment:
       BACKEND_URL: http://api:8000
       NEXT_PUBLIC_APP_NAME: Impact
-      NEXT_PUBLIC_SITE_URL: http://localhost:3000
-    ports: ["3000:3000"]
+      NEXT_PUBLIC_SITE_URL: http://localhost:${WEB_PORT:-3000}
+    ports: ["${WEB_PORT:-3000}:3000"]
     depends_on: [api]
 
 volumes:

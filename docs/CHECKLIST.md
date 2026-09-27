@@ -11,6 +11,8 @@ clicks. Time estimates are for a first pass. Details for each step live in the l
 git clone https://github.com/seeubh5798/creator-impact && cd creator-impact
 docker compose up --build            # first run ~3 min; later runs ~10 s
 ```
+If port 3000 or 8000 is taken on your machine: `WEB_PORT=3001 API_PORT=8001 docker compose up`.
+
 Open http://localhost:3000 → **Try the demo account** → on a post with `#ad` click
 **Tag as sponsored** → report appears in ~10 s. Stop with `Ctrl+C`; `docker compose down -v`
 wipes the local database.
